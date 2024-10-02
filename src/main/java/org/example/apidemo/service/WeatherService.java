@@ -11,116 +11,121 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class WeatherService {
+    private final String apiKey = "3Bg1H7pYosMLj7URD00rtt4W3S4FMhnmE4z2n4JU6NHNuZ6BMjL8laFqxOEHx%2BsbN1HvYmf5NrWNZm17xmW9BA%3D%3D";
+    private final String[] baseTimes = {"0000", "0600", "1200", "1500"};
 
-    private final String apiKey = "3Bg1H7pYosMLj7URD00rtt4W3S4FMhnmE4z2n4JU6NHNuZ6BMjL8laFqxOEHx%2BsbN1HvYmf5NrWNZm17xmW9BA%3D%3D"; // 유효한 API 키
+    public String getNearestBaseTime() {
+        LocalTime now = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HHmm");
 
-    public List<String> getTodayWeather(String baseTime, String nx, String ny) {
+        return baseTimes[0];
+    }
+
+    public List<String> getTodayWeather(String nx, String ny) {
         List<WeatherDTO> weatherData = new ArrayList<>();
-        String baseDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")); // 오늘 날짜
+        String baseDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String baseTime = getNearestBaseTime();
 
         try {
-            String urlString = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst"
-                    + "?ServiceKey=" + apiKey
-                    + "&pageNo=1"
-                    + "&numOfRows=1000"
-                    + "&dataType=JSON"
-                    + "&base_date=" + baseDate
-                    + "&base_time=" + baseTime
-                    + "&nx=" + nx
-                    + "&ny=" + ny;
+            String urlString = String.format(
+                    "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst" +
+                            "?ServiceKey=%s&pageNo=1&numOfRows=1000&dataType=JSON&base_date=%s&base_time=%s&nx=%s&ny=%s",
+                    apiKey, baseDate, baseTime, nx, ny);
 
             URL url = new URL(urlString);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Accept", "application/json");
 
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                    StringBuilder response = new StringBuilder();
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
 
-                    String inputLine;
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-
-                    String jsonResponseString = response.toString();
-                    JSONObject jsonResponse = new JSONObject(jsonResponseString);
-                    JSONObject items = jsonResponse.getJSONObject("response")
-                            .getJSONObject("body")
-                            .getJSONObject("items");
-
-                    JSONArray itemArray = items.getJSONArray("item");
-
-                    Map<String, WeatherDTO> weatherMap = new HashMap<>();
-
-                    for (int i = 0; i < itemArray.length(); i++) {
-                        JSONObject item = itemArray.getJSONObject(i);
-                        WeatherDTO weather = new WeatherDTO();
-                        weather.setBaseDate(item.getString("baseDate"));
-                        weather.setBaseTime(item.getString("baseTime"));
-                        weather.setCategory(item.getString("category"));
-                        weather.setFcstDate(item.getString("fcstDate"));
-                        weather.setFcstTime(item.getString("fcstTime"));
-                        weather.setFcstValue(item.getString("fcstValue"));
-
-                        if ("T1H".equals(weather.getCategory())) { // 기온 코드
-                            weather.setTemperature(weather.getFcstValue() + "°C");
-                        } else if ("REH".equals(weather.getCategory())) { // 습도 코드
-                            weather.setHumidity(weather.getFcstValue() + "%");
-                        }
-
-                        String key = weather.getFcstDate() + "_" + weather.getFcstTime();
-                        if (!weatherMap.containsKey(key)) {
-                            weatherMap.put(key, weather);
-                        } else {
-                            WeatherDTO existingWeather = weatherMap.get(key);
-                            if (weather.getTemperature() != null && !weather.getTemperature().equals("데이터 없음")) {
-                                existingWeather.setTemperature(weather.getTemperature());
-                            }
-                            if (weather.getHumidity() != null && !weather.getHumidity().equals("데이터 없음")) {
-                                existingWeather.setHumidity(weather.getHumidity());
-                            }
-                        }
-                    }
-
-                    weatherData.addAll(weatherMap.values());
-
-                    weatherData.sort(Comparator.comparing(WeatherDTO::getFcstTime));
-
-                    List<String> formattedWeatherData = new ArrayList<>();
-                    for (WeatherDTO weather : weatherData) {
-                        String formattedData = String.format("날짜: %s   시간: %s  날씨: %s  기온: %s  습도: %s",
-                                weather.getFcstDate(),
-                                weather.getFcstTime(),
-                                weather.getCategory() != null ? parsePty(weather.getCategory()) : "데이터 없음",
-                                weather.getTemperature() != null ? weather.getTemperature() : "데이터 없음",
-                                weather.getHumidity() != null ? weather.getHumidity() : "데이터 없음");
-                        formattedWeatherData.add(formattedData);
-                    }
-
-                    return formattedWeatherData; // 포맷팅된 데이터 반환
-
-                } catch (JSONException e) {
-                    System.err.println("JSON parsing error: " + e.getMessage());
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
                 }
+
+                in.close();
+                return parseWeatherData(response.toString());
+
             } else {
-                System.out.println("GET request failed: " + responseCode);
+                System.out.println("GET 요청 실패: 응답 코드 " + connection.getResponseCode());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return new ArrayList<>();
     }
+
+    private List<String> parseWeatherData(String jsonResponseString) {
+        List<WeatherDTO> weatherData = new ArrayList<>();
+        Map<String, WeatherDTO> weatherMap = new HashMap<>();
+
+        try {
+            JSONObject jsonResponse = new JSONObject(jsonResponseString);
+            JSONArray itemArray = jsonResponse.getJSONObject("response").getJSONObject("body").getJSONObject("items").getJSONArray("item");
+
+            for (int i = 0; i < itemArray.length(); i++) {
+                JSONObject item = itemArray.getJSONObject(i);
+                String category = item.getString("category");
+
+                if (!category.equals("T1H") && !category.equals("REH") && !category.equals("PTY")) {
+                    continue;
+                }
+
+                String key = item.getString("fcstDate") + "_" + item.getString("fcstTime");
+                WeatherDTO weather = weatherMap.getOrDefault(key, new WeatherDTO());
+                weather.setFcstDate(item.getString("fcstDate"));
+                weather.setFcstTime(item.getString("fcstTime"));
+
+                switch (category) {
+                    case "T1H":
+                        weather.setTemperature(item.getString("fcstValue") + "°C");
+                        break;
+                    case "REH":
+                        weather.setHumidity(item.getString("fcstValue") + "%");
+                        break;
+                    case "PTY":
+                        weather.setPrecipitation(parsePty(item.getString("fcstValue")));
+                        break;
+                }
+
+                weatherMap.put(key, weather);
+            }
+
+            weatherData.addAll(weatherMap.values());
+            weatherData.sort(Comparator.comparing(WeatherDTO::getFcstTime));
+
+            return formatWeatherData(weatherData);
+
+        } catch (JSONException e) {
+            System.err.println("JSON 파싱 오류: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private List<String> formatWeatherData(List<WeatherDTO> weatherData) {
+        List<String> formattedWeatherData = new ArrayList<>();
+        for (WeatherDTO weather : weatherData) {
+            String formattedData = String.format("날짜: %s   시간: %s  날씨: %s  기온: %s  습도: %s",
+                    weather.getFcstDate() != null ? weather.getFcstDate() : "데이터 없음",
+                    weather.getFcstTime() != null ? weather.getFcstTime() : "데이터 없음",
+                    weather.getPrecipitation() != null ? weather.getPrecipitation() : "데이터 없음",
+                    weather.getTemperature() != null ? weather.getTemperature() : "데이터 없음",
+                    weather.getHumidity() != null ? weather.getHumidity() : "데이터 없음");
+            formattedWeatherData.add(formattedData);
+        }
+        return formattedWeatherData;
+    }
+
+
 
     private static String parsePty(String pty) {
         switch (pty) {

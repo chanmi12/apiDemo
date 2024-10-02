@@ -9,6 +9,7 @@ public class WeatherDTO {
     private String fcstValue;
     private String temperature;
     private String humidity;
+    private String precipitation;
 
     public String getBaseDate() {
         return baseDate;
@@ -57,5 +58,11 @@ public class WeatherDTO {
     }
     public void setHumidity(String humidity) {
         this.humidity = humidity;
+    }
+    public String getPrecipitation() {  // 강수 형태 getter 추가
+        return precipitation;
+    }
+    public void setPrecipitation(String precipitation) {  // 강수 형태 setter 추가
+        this.precipitation = precipitation;
     }
 }
