@@ -59,7 +59,7 @@ public class WeatherDTO {
     public void setHumidity(String humidity) {
         this.humidity = humidity;
     }
-    public String getPrecipitation() {  // 강수 형태 getter 추가
+    public String getPrecipitation() {
         return precipitation;
     }
     public void setPrecipitation(String precipitation) {  // 강수 형태 setter 추가
