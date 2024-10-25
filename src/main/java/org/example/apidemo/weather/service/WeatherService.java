@@ -1,6 +1,6 @@
-package org.example.apidemo.service;
+package org.example.apidemo.weather.service;
 
-import org.example.apidemo.dto.WeatherDTO;
+import org.example.apidemo.weather.dto.WeatherDTO;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

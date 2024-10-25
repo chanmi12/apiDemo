@@ -1,4 +1,4 @@
-package org.example.apidemo.dto;
+package org.example.apidemo.weather.dto;
 
 public class WeatherDTO {
     private String baseDate;

@@ -1,6 +1,6 @@
-package org.example.apidemo.repository;
+package org.example.apidemo.weather.repository;
 
-import org.example.apidemo.entity.Weather;
+import org.example.apidemo.weather.entity.Weather;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

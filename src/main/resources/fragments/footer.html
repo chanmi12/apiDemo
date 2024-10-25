@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<style>
+    .footer-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background-color: #23272a;
+        color: #ffffff;
+        margin-top: auto;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .footer-info div {
+        display: flex;
+        align-items: center;
+    }
+    .footer-info img {
+        width: 50px; /* 적절한 너비로 조정 */
+        height: auto;
+        margin-right: 10px; /* 텍스트와의 간격을 위해 여백 추가 */
+    }
+
+</style>
+<footer>
+    <div class="footer-info">
+        <div>
+            <img th:src="@{/img/footerLogo.png}" alt="Footer Logo" />
+            <p>© (주)위넛시스</p>
+        </div>
+        <div>
+            <span th:text="${currentDate}"></span>
+            <button class="logout-button">로그아웃</button>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

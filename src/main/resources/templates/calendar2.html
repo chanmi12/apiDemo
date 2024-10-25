@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Custom Date Picker</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <style>
+        select {
+            margin-right: 5px;
+            padding: 5px;
+        }
+        .select_dropdown {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 5%;
+            margin-left: 3%;
+        }
+        .dateIcon {
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+        }
+        #hiddenDateInput {
+            visibility: hidden;
+            position: absolute;
+        }
+        .dateHead div {
+            background-color: white;
+            color: black;
+            text-align: center;
+            border: solid 1px black;
+            border-radius: 3px;
+            padding: 0.5rem;
+            margin-bottom: 1%;
+        }
+
+        .grid {
+            margin-left: -30%;
+            display: grid;
+            grid-template-columns: repeat(7, 180px);
+            grid-gap: 1px;
+        }
+        .dateCell {
+            background-color: #464c54;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 8rem;
+            padding: .5rem;
+            border: 1px solid #eee;
+            position: relative;
+        }
+        .noColor {
+            background: #eee;
+        }
+        .header {
+            display: flex;
+            margin-left: -60%;
+            margin-bottom: 2%;
+            justify-content: space-between;
+            padding: 1rem 50rem;
+        }
+        .btn {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #000;
+            border-width: 3px 3px 0 0;
+            cursor: pointer;
+        }
+        .prevDay {
+            transform: rotate(-135deg);
+        }
+        .nextDay {
+            transform: rotate(45deg);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            box-sizing: border-box;
+            font-family: Pretendard;
+        }
+        .rap {
+            padding: 0 1.4rem;
+            margin-top: 2%;
+            margin-left: 38%;
+        }
+        .dataInfo {
+            opacity: 0.9;
+            color: white;
+            border-radius: 5px;
+            padding: 0.3rem;
+            text-align: center;
+            width: 90%;
+            margin-top: 0.3rem;
+        }
+        .generationColor {
+            font-size: 18px;
+            color: #55e0ae !important
+        }
+
+        .transmissionColor {
+            font-size: 18px;
+            color: blue;
+        }
+
+        .dischargeColor {
+            font-size: 18px;
+            color:#ff5778;
+        }
+        .noData {
+            font-size: 0.8rem;
+            color: #bbb;
+        }
+    </style>
+
+</head>
+<body>
+<div class="select_dropdown">
+    <select id="yearSelect"></select>
+    <select id="monthSelect"></select>
+    <select id="daySelect"></select>
+    <img id="dateIcon" class="dateIcon" src="/report/calendar_icon.png" alt="달력 선택 버튼">
+    <input type="text" id="hiddenDateInput" />
+</div>
+
+<div class='rap'>
+    <div class="header">
+        <div class="btn prevDay"></div>
+        <h2 class='dateTitle'></h2>
+        <div class="btn nextDay"></div>
+    </div>
+
+    <div class="grid dateHead">
+        <div>일</div>
+        <div>월</div>
+        <div>화</div>
+        <div>수</div>
+        <div>목</div>
+        <div>금</div>
+        <div>토</div>
+    </div>
+
+    <div class="grid dateBoard"></div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        DropdownYear();
+        DropdownMonth();
+        DropdownDay();
+
+        $('#yearSelect').change(function() {
+            DropdownDay();
+            updateSelectedDate();
+        });
+
+        $('#monthSelect').change(function() {
+            DropdownDay();
+            updateSelectedDate();
+        });
+
+        $('#daySelect').change(function() {
+            updateSelectedDate();
+        });
+
+        $('#dateIcon').click(function() {
+            $('#hiddenDateInput').datepicker({
+                dateFormat: 'yy년 mm월 dd일',
+                onSelect: function(dateText) {
+                    const date = $(this).datepicker('getDate');
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    $('#yearSelect').val(year);
+                    $('#monthSelect').val(month);
+                    $('#daySelect').val(day);
+                    updateSelectedDate();
+                }
+            }).datepicker('show');
+        });
+
+        const energyData = {
+            "2024-10-01": { generation: 100, transmission: 50, discharge: 20 },
+            "2024-10-02": { generation: 150, transmission: 60, discharge: 30 },
+            "2024-10-03": { generation: 200, transmission: 80, discharge: 40 }
+        };
+
+        function DropdownYear() {
+            const selectYear = $('#yearSelect');
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear - 100; i <= currentYear + 20; i++) {
+                selectYear.append(`<option value="${i}">${i}년</option>`);
+            }
+            selectYear.val(currentYear);
+        }
+
+        function DropdownMonth() {
+            const selectMonth = $('#monthSelect');
+            for (let i = 1; i <= 12; i++) {
+                const formatMonth = String(i).padStart(2, '0');
+                selectMonth.append(`<option value="${formatMonth}">${formatMonth}월</option>`);
+            }
+            selectMonth.val(String(new Date().getMonth() + 1).padStart(2, '0'));
+        }
+
+        function DropdownDay() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+            const selectDay = $('#daySelect');
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            selectDay.empty();
+            for (let i = 1; i <= daysInMonth; i++) {
+                const formatDay = String(i).padStart(2, '0');
+                selectDay.append(`<option value="${formatDay}">${formatDay}일</option>`);
+            }
+            selectDay.val(String(new Date().getDate()).padStart(2, '0'));
+        }
+
+        function updateSelectedDate() {
+            const year = $('#yearSelect').val();
+            const month = $('#monthSelect').val();
+            const day = $('#daySelect').val();
+            const selectedDate = `${year}년 ${month}월 ${day}일`;
+            $('#selectedDate').text(selectedDate);
+        }
+
+        function makeCalendar(date) {
+            const currentYear = date.getFullYear();
+            const currentMonth = date.getMonth() + 1;
+
+            const firstDay = new Date(currentYear, date.getMonth(), 1).getDay();
+            const lastDay = new Date(currentYear, date.getMonth() + 1, 0).getDate();
+            const limitDay = firstDay + lastDay;
+
+            const nextDay = Math.ceil(limitDay / 7) * 7;
+            let htmlDummy = '';
+
+            for (let i = 0; i < firstDay; i++) {
+                htmlDummy += `<div class="noColor"></div>`;
+            }
+
+            for (let i = 1; i <= lastDay; i++) {
+                const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const data = energyData[dateStr];
+                const dataInfo = data ?
+                    `<div class="dataInfo">
+                <div class="generationColor">발전량: ${data.generation}kWh</div>
+                <div class="transmissionColor">충전량: ${data.transmission}kWh</div>
+                <div class="dischargeColor">방전량: ${data.discharge}kWh</div>
+            </div>` :
+                    `<div class="noData"></div>`;
+
+                htmlDummy += `<div class="dateCell" data-date="${dateStr}">
+                        <div>${i}</div>
+                        ${dataInfo}
+                      </div>`;
+            }
+
+            for (let i = limitDay; i < nextDay; i++) {
+                htmlDummy += `<div class="noColor"></div>`;
+            }
+
+            document.querySelector('.dateBoard').innerHTML = htmlDummy;
+            document.querySelector('.dateTitle').innerText = `${currentYear}년 ${currentMonth}월`;
+
+            document.querySelectorAll('.dateCell').forEach(dayDiv => {
+                dayDiv.onclick = function() {
+                    document.querySelectorAll('.dateBoard div').forEach(div => {
+                        div.style.backgroundColor = '';
+                    });
+                    this.style.backgroundColor = 'lightpink';
+                    const selectedDay = this.dataset.date;
+                    $('#daySelect').val(String(new Date(selectedDay).getDate()).padStart(2, '0'));
+                    updateSelectedDate();
+                };
+            });
+        }
+
+
+        const date = new Date();
+        makeCalendar(date);
+
+        document.querySelector('.prevDay').onclick = () => {
+            makeCalendar(new Date(date.setMonth(date.getMonth() - 1)));
+        }
+
+        document.querySelector('.nextDay').onclick = () => {
+            makeCalendar(new Date(date.setMonth(date.getMonth() + 1)));
+        }
+    });
+</script>
+</body>
+</html>

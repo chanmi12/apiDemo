@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Custom Date Picker</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <style>
+        body {
+            background-color: #23272a;
+        }
+
+        select {
+            margin-right: 5px;
+            padding: 5px;
+        }
+
+        .dateHead div {
+            background-color: white;
+            color: black;
+            text-align: center;
+            border: solid 1px black;
+            border-radius: 3px;
+            padding: 0.5rem;
+            margin-bottom: 1%;
+        }
+
+        .grid {
+            margin-left: -50%;
+            display: grid;
+            grid-template-columns: repeat(7, 220px);
+            grid-gap: 1px;
+        }
+
+        .dateCell {
+            background-color: #464c54;
+            color: white;
+            font-size: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 8rem;
+            padding: .5rem;
+            border: 1px solid #464c54;
+            position: relative;
+        }
+
+        .noColor {
+            background: #eee;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 20px;
+            margin-top: 3%;
+            margin-right: 60%;
+        }
+
+        .btn {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid white;
+            border-width: 3px 3px 0 0;
+            cursor: pointer;
+        }
+
+        .prevDay {
+            transform: rotate(-135deg);
+        }
+
+        .nextDay {
+            transform: rotate(45deg);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            box-sizing: border-box;
+            font-family: Pretendard;
+        }
+
+        .rap_background {
+            background-image: url('/img/report/board.png');
+            background-size: cover;
+            background-position: center;
+            margin-right: 5%;
+            margin-left: 5%;
+            height: 100vh;
+        }
+
+        .rap {
+            padding: 0 1.4rem;
+            margin-left: 38%;
+        }
+
+        .report {
+            color: white;
+            font-size: 25px;
+            position: relative;
+            top: 7px;
+            left: 15%;
+        }
+
+        .calendar {
+            margin-top: 3%;
+        }
+
+        .dataInfo {
+            opacity: 0.9;
+            color: white;
+            border-radius: 5px;
+            padding: 0.1rem;
+            text-align: center;
+            width: 90%;
+            margin-top: 0.3rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .dateTitle {
+            color: white;
+        }
+
+        .dataFont {
+            font-size: 18px;
+            color: white;
+            margin: 0;
+            padding-right: 10px;
+        }
+
+        .generationColor {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fabc12;
+        }
+
+        .transmissionColor {
+            font-size: 18px;
+            font-weight: bold;
+            color: #55e0ae;
+        }
+
+        .dischargeColor {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff5778;
+        }
+
+        .noData {
+            font-size: 18px;
+            color: white;
+        }
+    </style>
+
+</head>
+<body>
+<div class="rap_background">
+    <div class='rap'>
+        <h2 class="report">운영 리포트</h2>
+        <div class="header">
+            <div class="btn prevDay"></div>
+            <h2 class='dateTitle'></h2>
+            <div class="btn nextDay"></div>
+        </div>
+        <div class="calendar">
+            <div class="grid dateHead">
+                <div>일</div>
+                <div>월</div>
+                <div>화</div>
+                <div>수</div>
+                <div>목</div>
+                <div>금</div>
+                <div>토</div>
+            </div>
+
+            <div class="grid dateBoard"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        const apiUrl = '/api/report'; L
+
+        function makeCalendar(date, energyData) {
+            const currentYear = date.getFullYear();
+            const currentMonth = date.getMonth() + 1;
+            const firstDay = new Date(currentYear, date.getMonth(), 1).getDay();
+            const lastDay = new Date(currentYear, date.getMonth() + 1, 0).getDate();
+            const limitDay = firstDay + lastDay;
+            const nextDay = Math.ceil(limitDay / 7) * 7;
+            let htmlDummy = '';
+
+            for (let i = 0; i < firstDay; i++) {
+                htmlDummy += `<div class="noColor"></div>`;
+            }
+
+            for (let i = 1; i <= lastDay; i++) {
+                const dateKey = `${currentYear}${String(currentMonth).padStart(2, '0')}${String(i).padStart(2, '0')}`; // API에서 주는 날짜 형식에 맞추기
+                const data = energyData.find(item => item.date === dateKey); // 해당 날짜의 데이터를 찾음
+
+                if (data) {
+                    htmlDummy += `<div class="dateCell" data-date="${dateKey}">`;
+                    htmlDummy += `<span>${i}</span>`;
+                    htmlDummy += `<div class="dataInfo transmissionColor"><p class="dataFont">발전량:</p> ${data.totTrans}kWh</div>`;
+                    htmlDummy += `<div class="dataInfo generationColor"><p class="dataFont">충전량:</p> ${data.charge}kWh</div>`;
+                    htmlDummy += `<div class="dataInfo dischargeColor"><p class="dataFont">방전량:</p> ${data.discharge}kWh</div>`;
+                    htmlDummy += `</div>`;
+                } else {
+                    htmlDummy += `<div class="dateCell noData" data-date="${dateKey}"><span>${i}</span><div class="dataInfo">데이터 없음</div></div>`;
+                }
+            }
+
+            for (let i = limitDay; i < nextDay; i++) {
+                htmlDummy += `<div class="noColor"></div>`;
+            }
+
+            $('.dateBoard').html(htmlDummy);
+            $('.dateTitle').text(`${currentYear}년 ${currentMonth}월`);
+        }
+
+        function loadData(yearMonth) {
+            $.ajax({
+                url: apiUrl,
+                type: 'GET',
+                dataType: 'json',
+                data: { yearMonth: yearMonth },
+                success: function(data) {
+                    makeCalendar(currentDate, data);
+                },
+                error: function() {
+                    alert('데이터를 불러오는 중 오류가 발생했습니다.');
+                }
+            });
+        }
+
+        let currentDate = new Date();
+        loadData(`${currentDate.getFullYear()}${String(currentDate.getMonth() + 1).padStart(2, '0')}`); // 초기에는 현재 월의 데이터를 불러옴
+
+        $('.prevDay').click(function() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            loadData(`${currentDate.getFullYear()}${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
+        });
+
+        $('.nextDay').click(function() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            loadData(`${currentDate.getFullYear()}${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
+        });
+    });
+
+</script>
+
+</body>
+</html>

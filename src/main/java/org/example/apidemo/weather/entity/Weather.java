@@ -1,4 +1,4 @@
-package org.example.apidemo.entity;
+package org.example.apidemo.weather.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
